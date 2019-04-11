@@ -1,0 +1,83 @@
+
+#define BLYNK_PRINT Serial
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+
+// token ,wifi user ,wifi password
+char auth[] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+
+// Your WiFi credentials.
+// Set password to "" for open networks.
+char ssid[] = "xxxxxxxxxxxxxx";
+char pass[] = "xxxxxxxxxx";
+
+const int pump  = 4;
+const int button  = 5;
+bool buttonStatus = 0;
+bool buttonTemp = 0;
+
+WidgetLED ledBlynk(V8);
+
+
+BlynkTimer timer;
+
+BLYNK_CONNECTED() {
+  Blynk.syncAll();
+}
+
+void checkStatusButton()
+{
+  buttonStatus = digitalRead(button);
+
+  if (buttonStatus != buttonTemp)
+  {
+    if (buttonStatus == HIGH) {
+      digitalWrite(pump, HIGH);
+      Serial.println("LED Turned ON");
+      Blynk.virtualWrite(V11, 1);
+      ledBlynk.on();
+    }
+    else {
+      digitalWrite(pump, LOW);
+      Serial.println("LED Turned OFF");
+      Blynk.virtualWrite(V11, 0);
+      ledBlynk.off();
+    }
+    buttonTemp = buttonStatus;
+  }
+}
+
+BLYNK_WRITE(V11)
+{
+  if (param.asInt() == 0)
+  {
+    digitalWrite(pump, LOW);
+    ledBlynk.off();
+  }
+  if (param.asInt() == 1)
+  {
+    digitalWrite(pump, HIGH);
+    ledBlynk.on();
+  }
+}
+
+
+void setup() {
+  Serial.begin(9600);
+  //led
+  pinMode(pump, OUTPUT);
+ 
+  //set default status
+  digitalWrite(pump, LOW);
+  
+  //button
+  pinMode(button, INPUT);
+  //start blynk
+  Blynk.begin(auth, ssid, pass);
+  timer.setInterval(500, checkStatusButton);
+}
+
+void loop() {
+  Blynk.run();
+  timer.run();
+}
